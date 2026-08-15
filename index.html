@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web IDE Studio</title>
+    <title>Web Studio IDE - Project Workspace</title>
 
     <!-- FontAwesome & Google Fonts -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
-    <!-- Monaco EditorLoader -->
+    <!-- Monaco Editor Loader -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs/loader.min.js"></script>
 
     <style>
@@ -24,6 +24,8 @@
             --header-bg: #2d2d2d;
             --tab-active: #1e1e1e;
             --tab-inactive: #2d2d2d;
+            --sidebar-bg: #181818;
+            --hover-bg: #2a2d2e;
         }
 
         [data-theme="light"] {
@@ -37,60 +39,75 @@
             --header-bg: #f8f8f8;
             --tab-active: #ffffff;
             --tab-inactive: #ececec;
+            --sidebar-bg: #f3f3f3;
+            --hover-bg: #e4e4e4;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: var(--text-primary); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 
         /* Header Bar */
-        .navbar { height: 48px; background: var(--header-bg); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; user-select: none; }
-        .logo-title { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; color: var(--text-primary); }
-        .nav-controls { display: flex; align-items: center; gap: 10px; }
+        .navbar { height: 44px; background: var(--header-bg); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; user-select: none; }
+        .logo-title { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; }
+        .nav-controls { display: flex; align-items: center; gap: 8px; }
 
-        .btn { background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
+        .btn { background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
         .btn:hover { background: var(--accent-color); color: #fff; border-color: var(--accent-color); }
         .btn-primary { background: var(--accent-color); color: #fff; border: none; }
 
-        select.btn { outline: none; padding-right: 8px; }
+        /* App Workspace Layout */
+        .workspace { flex: 1; display: flex; width: 100%; height: calc(100vh - 44px); position: relative; overflow: hidden; }
 
-        /* Workspace Grid Layout */
-        .workspace { flex: 1; display: flex; width: 100%; height: calc(100vh - 48px); position: relative; overflow: hidden; }
-        .pane { height: 100%; display: flex; flex-direction: column; position: relative; }
-        #editor-pane { width: 50%; min-width: 200px; }
-        #preview-pane { flex: 1; min-width: 200px; background: #ffffff; }
+        /* File Explorer Sidebar */
+        .sidebar { width: 240px; background: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; user-select: none; }
+        .sidebar-header { padding: 10px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
+        .file-tree { flex: 1; overflow-y: auto; padding: 6px 0; }
+        
+        .tree-item { display: flex; align-items: center; gap: 8px; padding: 6px 12px; font-size: 13px; cursor: pointer; color: var(--text-primary); }
+        .tree-item:hover { background: var(--hover-bg); }
+        .tree-item.active { background: var(--accent-color); color: #fff; }
+        .tree-project { font-weight: 600; background: rgba(255, 255, 255, 0.03); }
+        .tree-file { padding-left: 28px; }
 
-        /* Resizer Divider */
-        .resizer { width: 6px; background: var(--border-color); cursor: col-resize; transition: background 0.2s; z-index: 10; }
-        .resizer:hover, .resizer.dragging { background: var(--accent-color); }
+        /* Custom Context Menu */
+        .context-menu { position: fixed; background: var(--bg-secondary); border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.3); border-radius: 4px; padding: 4px 0; width: 180px; z-index: 1000; display: none; }
+        .context-menu-item { padding: 8px 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--text-primary); }
+        .context-menu-item:hover { background: var(--accent-color); color: #fff; }
+        .context-menu-item.danger:hover { background: #e51400; color: #fff; }
 
-        /* Tabs Panel */
-        .tabs-header { height: 36px; background: var(--bg-secondary); display: flex; border-bottom: 1px solid var(--border-color); }
-        .tab-btn { display: flex; align-items: center; gap: 8px; padding: 0 16px; background: var(--tab-inactive); color: var(--text-muted); border: none; border-right: 1px solid var(--border-color); font-size: 13px; font-weight: 500; cursor: pointer; }
+        /* Main Editor Section */
+        .main-editor-area { flex: 1; display: flex; flex-direction: column; height: 100%; }
+        .editor-tabs { height: 36px; background: var(--bg-secondary); display: flex; border-bottom: 1px solid var(--border-color); overflow-x: auto; }
+        .tab-btn { display: flex; align-items: center; gap: 8px; padding: 0 14px; background: var(--tab-inactive); color: var(--text-muted); border: none; border-right: 1px solid var(--border-color); font-size: 12px; font-weight: 500; cursor: pointer; height: 100%; }
         .tab-btn.active { background: var(--tab-active); color: var(--text-primary); border-top: 2px solid var(--accent-color); }
 
-        /* Personalized Language Icons */
-        .icon-html { color: #E44D26; }
-        .icon-css { color: #264DE4; }
-        .icon-js { color: #F7DF1E; }
+        .editor-container { flex: 1; width: 100%; height: 100%; position: relative; }
+        #monaco-container { width: 100%; height: 100%; }
 
-        /* Monaco Container */
-        .editor-container { flex: 1; width: 100%; height: 100%; }
-        .monaco-instance { width: 100%; height: 100%; display: none; }
-        .monaco-instance.active { display: block; }
+        /* Resizers */
+        .resizer { width: 5px; background: var(--border-color); cursor: col-resize; z-index: 10; }
+        .resizer:hover, .resizer.dragging { background: var(--accent-color); }
 
-        /* Preview Workspace */
+        /* Preview Pane (Hidden by Default) */
+        #preview-pane { width: 45%; min-width: 250px; background: #ffffff; display: none; flex-direction: column; border-left: 1px solid var(--border-color); }
+        #preview-pane.active { display: flex; }
+
         .preview-header { height: 36px; background: var(--bg-secondary); display: flex; align-items: center; justify-content: space-between; padding: 0 12px; border-bottom: 1px solid var(--border-color); color: var(--text-muted); font-size: 12px; }
         #preview-frame { width: 100%; flex: 1; border: none; background: #fff; }
 
-        /* Integrated Console Panel */
-        .console-panel { height: 160px; background: #181818; color: #cccccc; border-top: 1px solid var(--border-color); display: flex; flex-direction: column; font-family: 'Fira Code', monospace; font-size: 12px; }
-        .console-header { height: 28px; background: #222222; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #2a2a2a; color: var(--text-muted); }
-        .console-logs { flex: 1; overflow-y: auto; padding: 8px 12px; list-style: none; }
-        .console-entry { padding: 3px 0; border-bottom: 1px solid #222; font-size: 12px; display: flex; gap: 8px; }
+        /* Console Output */
+        .console-panel { height: 140px; background: #181818; color: #cccccc; border-top: 1px solid var(--border-color); display: flex; flex-direction: column; font-family: 'Fira Code', monospace; font-size: 11px; }
+        .console-header { height: 26px; background: #222222; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #2a2a2a; color: var(--text-muted); }
+        .console-logs { flex: 1; overflow-y: auto; padding: 6px 12px; list-style: none; }
+        .console-entry { padding: 2px 0; border-bottom: 1px solid #222; }
         .console-entry.log { color: #cccccc; }
         .console-entry.error { color: #f48771; }
-        .console-entry.warn { color: #cca700; }
-        .console-entry.info { color: #75beff; }
+
+        /* Personalized Icons */
+        .icon-html { color: #E44D26; }
+        .icon-css { color: #264DE4; }
+        .icon-js { color: #F7DF1E; }
+        .icon-folder { color: #DCB67A; }
     </style>
 </head>
 <body>
@@ -101,41 +118,42 @@
             <i class="fa-solid fa-code icon-css"></i> Web Studio IDE
         </div>
         <div class="nav-controls">
-            <select id="template-select" class="btn" title="Load Starter Template">
-                <option value="default">Template: Blank</option>
-                <option value="counter">Template: Counter App</option>
-                <option value="card">Template: UI Card Component</option>
-            </select>
-            <button class="btn" id="run-btn" title="Run Code (Ctrl+Enter)"><i class="fa-solid fa-play"></i> Run</button>
-            <button class="btn" id="save-btn" title="Auto-saves automatically. Click to download (Ctrl+S)"><i class="fa-solid fa-download"></i> Export</button>
-            <button class="btn" id="theme-btn" title="Toggle Dark/Light Mode"><i class="fa-solid fa-moon"></i></button>
+            <button class="btn btn-primary" id="run-btn" title="Run Live Server"><i class="fa-solid fa-play"></i> Run</button>
+            <button class="btn" id="close-preview-btn" style="display:none;"><i class="fa-solid fa-xmark"></i> Stop Server</button>
+            <button class="btn" id="export-btn" title="Export Active HTML File"><i class="fa-solid fa-download"></i> Export</button>
+            <button class="btn" id="theme-btn" title="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
         </div>
     </header>
 
     <!-- Workspace -->
     <main class="workspace">
-        <!-- Editor Pane -->
-        <section class="pane" id="editor-pane">
-            <div class="tabs-header">
-                <button class="tab-btn active" data-target="html"><i class="fa-brands fa-html5 icon-html"></i> index.html</button>
-                <button class="tab-btn" data-target="css"><i class="fa-brands fa-css3-alt icon-css"></i> styles.css</button>
-                <button class="tab-btn" data-target="js"><i class="fa-brands fa-square-js icon-js"></i> app.js</button>
+        <!-- Sidebar File Explorer -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <span>Explorer</span>
+                <button class="btn" id="new-project-btn" style="padding: 2px 6px; font-size: 10px;" title="Create New Project">
+                    <i class="fa-solid fa-folder-plus"></i> New Project
+                </button>
             </div>
+            <div class="file-tree" id="file-tree"></div>
+        </aside>
+
+        <!-- Main Code Editor -->
+        <section class="main-editor-area">
+            <div class="editor-tabs" id="editor-tabs"></div>
             <div class="editor-container">
-                <div id="html-editor" class="monaco-instance active"></div>
-                <div id="css-editor" class="monaco-instance"></div>
-                <div id="js-editor" class="monaco-instance"></div>
+                <div id="monaco-container"></div>
             </div>
         </section>
 
-        <!-- Resizer Divider -->
-        <div class="resizer" id="drag-divider"></div>
+        <!-- Resizer Divider for Live Server -->
+        <div class="resizer" id="drag-divider" style="display: none;"></div>
 
-        <!-- Live Preview & Console Pane -->
-        <section class="pane" id="preview-pane">
+        <!-- Live Server Preview Pane -->
+        <section id="preview-pane">
             <div class="preview-header">
                 <span><i class="fa-solid fa-desktop"></i> Live Output</span>
-                <span id="save-status" style="font-size: 11px; opacity: 0.8;">Saved to local cache</span>
+                <span style="font-size: 11px; opacity: 0.8;">Server Running...</span>
             </div>
             <iframe id="preview-frame" sandbox="allow-scripts"></iframe>
 
@@ -143,78 +161,281 @@
             <div class="console-panel">
                 <div class="console-header">
                     <span><i class="fa-solid fa-terminal"></i> Console</span>
-                    <button id="clear-console-btn" class="btn" style="padding: 2px 6px; font-size: 10px;"><i class="fa-solid fa-ban"></i> Clear</button>
+                    <button id="clear-console-btn" class="btn" style="padding: 2px 4px; font-size: 10px;"><i class="fa-solid fa-ban"></i> Clear</button>
                 </div>
                 <ul class="console-logs" id="console-logs"></ul>
             </div>
         </section>
     </main>
 
+    <!-- Custom Context Menu -->
+    <div id="context-menu" class="context-menu"></div>
+
     <script>
-        // Default Templates
-        const templates = {
-            default: {
-                html: `<div class="app">\n  <h1>Hello, Web Studio!</h1>\n  <p>Start coding in real time.</p>\n  <button id="demo-btn">Click Me</button>\n</div>`,
-                css: `body {\n  font-family: sans-serif;\n  display: grid;\n  place-content: center;\n  height: 100vh;\n  margin: 0;\n  background: #f0f2f5;\n}\n.app {\n  text-align: center;\n  background: #ffffff;\n  padding: 30px;\n  border-radius: 8px;\n  box-shadow: 0 4px 12px rgba(0,0,0,0.1);\n}\nbutton {\n  background: #007acc;\n  color: white;\n  border: none;\n  padding: 10px 20px;\n  border-radius: 4px;\n  cursor: pointer;\n}`,
-                js: `document.getElementById('demo-btn').addEventListener('click', () => {\n  console.log('Button clicked successfully!');\n  alert('IDE is functional!');\n});`
-            },
-            counter: {
-                html: `<div class="card">\n  <h2>Counter</h2>\n  <span id="count">0</span>\n  <div class="actions">\n    <button id="decrement">-</button>\n    <button id="increment">+</button>\n  </div>\n</div>`,
-                css: `body { display: grid; place-content: center; height: 100vh; font-family: Arial; margin: 0; background: #121212; color: #fff; }\n.card { background: #1e1e1e; padding: 24px; border-radius: 12px; text-align: center; border: 1px solid #333; }\n#count { font-size: 48px; font-weight: bold; display: block; margin: 16px 0; color: #007acc; }\n.actions { display: flex; gap: 10px; justify-content: center; }\nbutton { font-size: 18px; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; background: #333; color: #fff; }`,
-                js: `let count = 0;\nconst countEl = document.getElementById('count');\n\ndocument.getElementById('increment').onclick = () => { count++; countEl.textContent = count; console.log('Current count:', count); };\ndocument.getElementById('decrement').onclick = () => { count--; countEl.textContent = count; console.log('Current count:', count); };`
+        // State Management
+        let projects = JSON.parse(localStorage.getItem('ide_projects')) || {
+            "My First App": {
+                "index.html": `<div class="app">\n  <h1>Hello World</h1>\n  <button id="btn">Click Me</button>\n</div>`,
+                "styles.css": `body { font-family: sans-serif; background: #121212; color: #fff; display: grid; place-content: center; height: 100vh; margin: 0; }\nbutton { background: #007acc; color: white; border: none; padding: 10px 16px; border-radius: 4px; cursor: pointer; }`,
+                "script.js": `document.getElementById('btn').addEventListener('click', () => {\n  console.log('Running script!');\n  alert('Hello from Web Studio!');\n});`
             }
         };
 
-        const editors = {};
+        let currentProject = "My First App";
+        let activeFile = "index.html";
+        let openTabs = ["index.html"];
+        let editorInstance = null;
         let currentTheme = 'vs-dark';
+        let contextTarget = null; // Stores item selected on right click
 
         // Initialize Monaco Editor
         require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs' }});
         require(['vs/editor/editor.main'], function() {
-            const languages = ['html', 'css', 'javascript'];
-            
-            languages.forEach(lang => {
-                const targetKey = lang === 'javascript' ? 'js' : lang;
-                const savedCode = localStorage.getItem(`ide_code_${targetKey}`) || templates.default[targetKey];
-
-                editors[targetKey] = monaco.editor.create(document.getElementById(`${targetKey}-editor`), {
-                    value: savedCode,
-                    language: lang,
-                    theme: currentTheme,
-                    automaticLayout: true,
-                    fontSize: 13,
-                    fontFamily: 'Fira Code',
-                    minimap: { enabled: false },
-                    scrollBeyondLastLine: false,
-                    tabSize: 2
-                });
-
-                // Auto-save & Real-time update listener
-                editors[targetKey].onDidChangeModelContent(() => {
-                    localStorage.setItem(`ide_code_${targetKey}`, editors[targetKey].getValue());
-                    document.getElementById('save-status').textContent = 'Auto-saved';
-                    triggerLiveUpdate();
-                });
+            editorInstance = monaco.editor.create(document.getElementById('monaco-container'), {
+                value: projects[currentProject][activeFile] || '',
+                language: getLanguage(activeFile),
+                theme: currentTheme,
+                automaticLayout: true,
+                fontSize: 13,
+                fontFamily: 'Fira Code',
+                minimap: { enabled: false }
             });
 
-            // Initial render
-            triggerLiveUpdate();
+            // Save state on change
+            editorInstance.onDidChangeModelContent(() => {
+                if (currentProject && activeFile) {
+                    projects[currentProject][activeFile] = editorInstance.getValue();
+                    saveState();
+                }
+            });
+
+            renderSidebar();
+            renderTabs();
         });
 
-        // Tab Switching Logic
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.monaco-instance').forEach(e => e.classList.remove('active'));
+        function saveState() {
+            localStorage.setItem('ide_projects', JSON.stringify(projects));
+        }
+
+        function getLanguage(filename) {
+            if (filename.endsWith('.html')) return 'html';
+            if (filename.endsWith('.css')) return 'css';
+            if (filename.endsWith('.js')) return 'javascript';
+            return 'plaintext';
+        }
+
+        function getIconClass(filename) {
+            if (filename.endsWith('.html')) return 'fa-brands fa-html5 icon-html';
+            if (filename.endsWith('.css')) return 'fa-brands fa-css3-alt icon-css';
+            if (filename.endsWith('.js')) return 'fa-brands fa-square-js icon-js';
+            return 'fa-solid fa-file';
+        }
+
+        // Render File Tree Sidebar
+        function renderSidebar() {
+            const tree = document.getElementById('file-tree');
+            tree.innerHTML = '';
+
+            Object.keys(projects).forEach(projName => {
+                const projEl = document.createElement('div');
+                projEl.className = `tree-item tree-project`;
+                projEl.innerHTML = `<i class="fa-solid fa-folder icon-folder"></i> <span>${projName}</span>`;
+                projEl.oncontextmenu = (e) => showContextMenu(e, 'project', projName);
+                tree.appendChild(projEl);
+
+                Object.keys(projects[projName]).forEach(fileName => {
+                    const fileEl = document.createElement('div');
+                    fileEl.className = `tree-item tree-file ${projName === currentProject && fileName === activeFile ? 'active' : ''}`;
+                    fileEl.innerHTML = `<i class="${getIconClass(fileName)}"></i> <span>${fileName}</span>`;
+                    
+                    fileEl.onclick = () => {
+                        currentProject = projName;
+                        switchToFile(fileName);
+                    };
+                    
+                    fileEl.oncontextmenu = (e) => showContextMenu(e, 'file', fileName, projName);
+                    tree.appendChild(fileEl);
+                });
+            });
+        }
+
+        // Context Menu Management
+        const contextMenu = document.getElementById('context-menu');
+
+        function showContextMenu(e, type, name, parentProject = null) {
+            e.preventDefault();
+            contextTarget = { type, name, parentProject };
+            contextMenu.innerHTML = '';
+
+            if (type === 'project') {
+                contextMenu.innerHTML = `
+                    <div class="context-menu-item" onclick="createNewFile('${name}')"><i class="fa-solid fa-file-circle-plus"></i> Create File</div>
+                    <div class="context-menu-item" onclick="renameProject('${name}')"><i class="fa-solid fa-pen"></i> Rename Folder</div>
+                    <div class="context-menu-item danger" onclick="deleteProject('${name}')"><i class="fa-solid fa-trash"></i> Delete Project</div>
+                `;
+            } else if (type === 'file') {
+                const isHTML = name.endsWith('.html');
+                contextMenu.innerHTML = `
+                    ${isHTML ? `<div class="context-menu-item" onclick="runLiveServer()"><i class="fa-solid fa-play"></i> Run Live Server</div>` : ''}
+                    <div class="context-menu-item" onclick="renameFile('${parentProject}', '${name}')"><i class="fa-solid fa-pen"></i> Rename</div>
+                    <div class="context-menu-item danger" onclick="deleteFile('${parentProject}', '${name}')"><i class="fa-solid fa-trash"></i> Delete</div>
+                `;
+            }
+
+            contextMenu.style.top = `${e.clientY}px`;
+            contextMenu.style.left = `${e.clientX}px`;
+            contextMenu.style.display = 'block';
+        }
+
+        document.onclick = () => contextMenu.style.display = 'none';
+
+        // Project / File Operations
+        document.getElementById('new-project-btn').onclick = () => {
+            const name = prompt("Enter new project name:");
+            if (name && !projects[name]) {
+                projects[name] = { "index.html": "<!-- New HTML File -->" };
+                currentProject = name;
+                switchToFile("index.html");
+                saveState();
+                renderSidebar();
+            }
+        };
+
+        function createNewFile(projName) {
+            const fileName = prompt("Enter file name (e.g. index.html, style.css, app.js):");
+            if (fileName) {
+                projects[projName][fileName] = '';
+                currentProject = projName;
+                switchToFile(fileName);
+                saveState();
+                renderSidebar();
+            }
+        }
+
+        function renameProject(oldName) {
+            const newName = prompt("Enter new project name:", oldName);
+            if (newName && newName !== oldName) {
+                projects[newName] = projects[oldName];
+                delete projects[oldName];
+                if (currentProject === oldName) currentProject = newName;
+                saveState();
+                renderSidebar();
+            }
+        }
+
+        function deleteProject(name) {
+            if (confirm(`Delete project "${name}"?`)) {
+                delete projects[name];
+                saveState();
+                renderSidebar();
+            }
+        }
+
+        function renameFile(projName, oldName) {
+            const newName = prompt("Enter new file name:", oldName);
+            if (newName && newName !== oldName) {
+                projects[projName][newName] = projects[projName][oldName];
+                delete projects[projName][oldName];
                 
-                btn.classList.add('active');
-                const target = btn.getAttribute('data-target');
-                document.getElementById(`${target}-editor`).classList.add('active');
-                if (editors[target]) editors[target].layout();
-            });
-        });
+                openTabs = openTabs.map(t => t === oldName ? newName : t);
+                if (activeFile === oldName) activeFile = newName;
+                
+                saveState();
+                renderSidebar();
+                renderTabs();
+            }
+        }
 
-        // Console Logging Engine
+        function deleteFile(projName, fileName) {
+            if (confirm(`Delete file "${fileName}"?`)) {
+                delete projects[projName][fileName];
+                openTabs = openTabs.filter(t => t !== fileName);
+                if (activeFile === fileName) activeFile = openTabs[0] || '';
+                saveState();
+                renderSidebar();
+                renderTabs();
+                if (activeFile) switchToFile(activeFile);
+            }
+        }
+
+        function switchToFile(fileName) {
+            activeFile = fileName;
+            if (!openTabs.includes(fileName)) openTabs.push(fileName);
+            
+            const content = projects[currentProject][fileName] || '';
+            const lang = getLanguage(fileName);
+            
+            monaco.editor.setModelLanguage(editorInstance.getModel(), lang);
+            editorInstance.setValue(content);
+            
+            renderSidebar();
+            renderTabs();
+        }
+
+        function renderTabs() {
+            const tabsContainer = document.getElementById('editor-tabs');
+            tabsContainer.innerHTML = '';
+
+            openTabs.forEach(file => {
+                const btn = document.createElement('button');
+                btn.className = `tab-btn ${file === activeFile ? 'active' : ''}`;
+                btn.innerHTML = `<i class="${getIconClass(file)}"></i> ${file}`;
+                btn.onclick = () => switchToFile(file);
+                tabsContainer.appendChild(btn);
+            });
+        }
+
+        // Live Server Runner
+        document.getElementById('run-btn').onclick = runLiveServer;
+
+        function runLiveServer() {
+            const previewPane = document.getElementById('preview-pane');
+            const resizer = document.getElementById('drag-divider');
+            const closeBtn = document.getElementById('close-preview-btn');
+
+            previewPane.classList.add('active');
+            resizer.style.display = 'block';
+            closeBtn.style.display = 'flex';
+
+            // Compile combined HTML/CSS/JS from active project
+            let htmlContent = '';
+            let cssContent = '';
+            let jsContent = '';
+
+            Object.keys(projects[currentProject]).forEach(file => {
+                if (file.endsWith('.html')) htmlContent += projects[currentProject][file];
+                if (file.endsWith('.css')) cssContent += `<style>${projects[currentProject][file]}</style>`;
+                if (file.endsWith('.js')) jsContent += `<script>${projects[currentProject][file]}<\/script>`;
+            });
+
+            const consoleInterceptor = `
+                <script>
+                    (function(){
+                        const capture = (level) => (...args) => {
+                            window.parent.postMessage({
+                                type: 'CONSOLE_LOG',
+                                level: level,
+                                args: args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a))
+                            }, '*');
+                        };
+                        console.log = capture('log');
+                        console.error = capture('error');
+                        window.onerror = (msg, url, line) => capture('error')(\`Error: \${msg} (Line \${line})\`);
+                    })();
+                <\/script>
+            `;
+
+            const srcDoc = `<!DOCTYPE html><html><head>${cssContent}${consoleInterceptor}</head><body>${htmlContent}${jsContent}</body></html>`;
+            document.getElementById('preview-frame').srcdoc = srcDoc;
+        }
+
+        document.getElementById('close-preview-btn').onclick = () => {
+            document.getElementById('preview-pane').classList.remove('active');
+            document.getElementById('drag-divider').style.display = 'none';
+            document.getElementById('close-preview-btn').style.display = 'none';
+        };
+
+        // Console Catch
         const consoleLogs = document.getElementById('console-logs');
         document.getElementById('clear-console-btn').onclick = () => consoleLogs.innerHTML = '';
 
@@ -228,43 +449,9 @@
             }
         });
 
-        // Live Preview Renderer
-        function triggerLiveUpdate() {
-            if (!editors.html || !editors.css || !editors.js) return;
-
-            const html = editors.html.getValue();
-            const css = `<style>${editors.css.getValue()}</style>`;
-            
-            // Console Interceptor Injection
-            const consoleInterceptor = `
-                <script>
-                    (function(){
-                        const capture = (level) => (...args) => {
-                            window.parent.postMessage({
-                                type: 'CONSOLE_LOG',
-                                level: level,
-                                args: args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a))
-                            }, '*');
-                        };
-                        console.log = capture('log');
-                        console.error = capture('error');
-                        console.warn = capture('warn');
-                        console.info = capture('info');
-                        window.onerror = (msg, url, line) => capture('error')(\`Error: \${msg} (Line \${line})\`);
-                    })();
-                <\/script>
-            `;
-
-            const js = `<script>${editors.js.getValue()}<\/script>`;
-            const srcDoc = `<!DOCTYPE html><html><head>${css}${consoleInterceptor}</head><body>${html}${js}</body></html>`;
-
-            const frame = document.getElementById('preview-frame');
-            frame.srcdoc = srcDoc;
-        }
-
-        // Draggable Panel Resizer
+        // Draggable Resizer
         const divider = document.getElementById('drag-divider');
-        const editorPane = document.getElementById('editor-pane');
+        const previewPane = document.getElementById('preview-pane');
         let isDragging = false;
 
         divider.addEventListener('mousedown', () => { isDragging = true; divider.classList.add('dragging'); });
@@ -272,56 +459,30 @@
         document.addEventListener('mousemove', (e) => {
             if (!isDragging) return;
             const containerWidth = document.querySelector('.workspace').offsetWidth;
-            const newWidth = (e.clientX / containerWidth) * 100;
-            if (newWidth > 15 && newWidth < 85) {
-                editorPane.style.width = `${newWidth}%`;
+            const newWidth = ((containerWidth - e.clientX) / containerWidth) * 100;
+            if (newWidth > 20 && newWidth < 70) {
+                previewPane.style.width = `${newWidth}%`;
             }
         });
 
-        // Theme Toggle
+        // Theme Switcher
         document.getElementById('theme-btn').onclick = () => {
             const current = document.documentElement.getAttribute('data-theme');
             const next = current === 'dark' ? 'light' : 'dark';
             document.documentElement.setAttribute('data-theme', next);
             currentTheme = next === 'dark' ? 'vs-dark' : 'vs';
-            Object.values(editors).forEach(e => monaco.editor.setTheme(currentTheme));
+            monaco.editor.setTheme(currentTheme);
         };
 
-        // Templates Loader
-        document.getElementById('template-select').onchange = (e) => {
-            const key = e.target.value;
-            if (templates[key]) {
-                editors.html.setValue(templates[key].html);
-                editors.css.setValue(templates[key].css);
-                editors.js.setValue(templates[key].js);
-            }
-        };
-
-        // Export Functionality (.html)
-        document.getElementById('save-btn').onclick = exportStandaloneHTML;
-
-        function exportStandaloneHTML() {
-            const combined = `<!DOCTYPE html>\n<html>\n<head>\n<style>\n${editors.css.getValue()}\n</style>\n</head>\n<body>\n${editors.html.getValue()}\n<script>\n${editors.js.getValue()}\n<\/script>\n</body>\n</html>`;
-            const blob = new Blob([combined], { type: 'text/html' });
+        // Export Active File
+        document.getElementById('export-btn').onclick = () => {
+            if (!activeFile) return;
+            const blob = new Blob([projects[currentProject][activeFile]], { type: 'text/plain' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = 'index.html';
+            a.download = activeFile;
             a.click();
-        }
-
-        // Global Shortcuts
-        document.addEventListener('keydown', (e) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-                e.preventDefault();
-                exportStandaloneHTML();
-            }
-            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                e.preventDefault();
-                triggerLiveUpdate();
-            }
-        });
-
-        document.getElementById('run-btn').onclick = triggerLiveUpdate;
+        };
     </script>
 </body>
 </html>
