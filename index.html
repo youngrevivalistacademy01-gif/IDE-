@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web Studio IDE - Project Workspace</title>
 
-    <!-- FontAwesome & Google Fonts -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
-    <!-- Monaco Editor Loader -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs/loader.min.js"></script>
 
     <style>
@@ -88,11 +86,11 @@
         .resizer { width: 5px; background: var(--border-color); cursor: col-resize; z-index: 10; }
         .resizer:hover, .resizer.dragging { background: var(--accent-color); }
 
-        /* Preview Pane (Hidden by Default) */
-        #preview-pane { width: 45%; min-width: 250px; background: #ffffff; display: none; flex-direction: column; border-left: 1px solid var(--border-color); }
+        /* Full-Screen Live Server Preview Container */
+        #preview-pane { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 500; background: #ffffff; display: none; flex-direction: column; }
         #preview-pane.active { display: flex; }
 
-        .preview-header { height: 36px; background: var(--bg-secondary); display: flex; align-items: center; justify-content: space-between; padding: 0 12px; border-bottom: 1px solid var(--border-color); color: var(--text-muted); font-size: 12px; }
+        .preview-header { height: 40px; background: var(--bg-secondary); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; border-bottom: 1px solid var(--border-color); color: var(--text-muted); font-size: 12px; }
         #preview-frame { width: 100%; flex: 1; border: none; background: #fff; }
 
         /* Console Output */
@@ -112,22 +110,18 @@
 </head>
 <body>
 
-    <!-- Header Navigation -->
     <header class="navbar">
         <div class="logo-title">
             <i class="fa-solid fa-code icon-css"></i> Web Studio IDE
         </div>
         <div class="nav-controls">
             <button class="btn btn-primary" id="run-btn" title="Run Live Server"><i class="fa-solid fa-play"></i> Run</button>
-            <button class="btn" id="close-preview-btn" style="display:none;"><i class="fa-solid fa-xmark"></i> Stop Server</button>
             <button class="btn" id="export-btn" title="Export Active HTML File"><i class="fa-solid fa-download"></i> Export</button>
             <button class="btn" id="theme-btn" title="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
         </div>
     </header>
 
-    <!-- Workspace -->
     <main class="workspace">
-        <!-- Sidebar File Explorer -->
         <aside class="sidebar">
             <div class="sidebar-header">
                 <span>Explorer</span>
@@ -138,7 +132,6 @@
             <div class="file-tree" id="file-tree"></div>
         </aside>
 
-        <!-- Main Code Editor -->
         <section class="main-editor-area">
             <div class="editor-tabs" id="editor-tabs"></div>
             <div class="editor-container">
@@ -146,18 +139,14 @@
             </div>
         </section>
 
-        <!-- Resizer Divider for Live Server -->
-        <div class="resizer" id="drag-divider" style="display: none;"></div>
-
-        <!-- Live Server Preview Pane -->
         <section id="preview-pane">
             <div class="preview-header">
+                <button class="btn btn-primary" id="close-preview-btn"><i class="fa-solid fa-arrow-left"></i> Back to IDE</button>
                 <span><i class="fa-solid fa-desktop"></i> Live Output</span>
                 <span style="font-size: 11px; opacity: 0.8;">Server Running...</span>
             </div>
             <iframe id="preview-frame" sandbox="allow-scripts"></iframe>
 
-            <!-- Integrated Console -->
             <div class="console-panel">
                 <div class="console-header">
                     <span><i class="fa-solid fa-terminal"></i> Console</span>
@@ -168,7 +157,6 @@
         </section>
     </main>
 
-    <!-- Custom Context Menu -->
     <div id="context-menu" class="context-menu"></div>
 
     <script>
@@ -293,7 +281,7 @@
         document.getElementById('new-project-btn').onclick = () => {
             const name = prompt("Enter new project name:");
             if (name && !projects[name]) {
-                projects[name] = { "index.html": "<!-- New HTML File -->" };
+                projects[name] = { "index.html": "" };
                 currentProject = name;
                 switchToFile("index.html");
                 saveState();
@@ -390,12 +378,7 @@
 
         function runLiveServer() {
             const previewPane = document.getElementById('preview-pane');
-            const resizer = document.getElementById('drag-divider');
-            const closeBtn = document.getElementById('close-preview-btn');
-
             previewPane.classList.add('active');
-            resizer.style.display = 'block';
-            closeBtn.style.display = 'flex';
 
             // Compile combined HTML/CSS/JS from active project
             let htmlContent = '';
@@ -431,8 +414,6 @@
 
         document.getElementById('close-preview-btn').onclick = () => {
             document.getElementById('preview-pane').classList.remove('active');
-            document.getElementById('drag-divider').style.display = 'none';
-            document.getElementById('close-preview-btn').style.display = 'none';
         };
 
         // Console Catch
@@ -446,22 +427,6 @@
                 li.textContent = `[${event.data.level.toUpperCase()}] ${event.data.args.join(' ')}`;
                 consoleLogs.appendChild(li);
                 consoleLogs.scrollTop = consoleLogs.scrollHeight;
-            }
-        });
-
-        // Draggable Resizer
-        const divider = document.getElementById('drag-divider');
-        const previewPane = document.getElementById('preview-pane');
-        let isDragging = false;
-
-        divider.addEventListener('mousedown', () => { isDragging = true; divider.classList.add('dragging'); });
-        document.addEventListener('mouseup', () => { isDragging = false; divider.classList.remove('dragging'); });
-        document.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            const containerWidth = document.querySelector('.workspace').offsetWidth;
-            const newWidth = ((containerWidth - e.clientX) / containerWidth) * 100;
-            if (newWidth > 20 && newWidth < 70) {
-                previewPane.style.width = `${newWidth}%`;
             }
         });
 
